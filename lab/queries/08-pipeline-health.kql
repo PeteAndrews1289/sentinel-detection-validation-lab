@@ -1,0 +1,22 @@
+// Run each block separately. A table may not exist until its first event arrives.
+Heartbeat
+| where TimeGenerated > ago(30m)
+| summarize LastHeartbeat = max(TimeGenerated) by Computer
+
+// Sysmon ingestion: set the scope to the lab workspace, and inspect this host.
+Event
+| where TimeGenerated > ago(1h)
+| where EventLog == "Microsoft-Windows-Sysmon/Operational"
+| summarize Events=count(), LastEvent=max(TimeGenerated) by Computer, EventID
+
+// Security ingestion: generate a fresh account test after enabling the DCR.
+SecurityEvent
+| where TimeGenerated > ago(1h)
+| where EventID in (4720, 4726, 4732, 4733)
+| summarize Events=count(), LastEvent=max(TimeGenerated) by Computer, EventID
+
+// Enable Sentinel auditing/health monitoring before running this block.
+_SentinelHealth()
+| where TimeGenerated > ago(2h)
+| order by TimeGenerated desc
+| take 50

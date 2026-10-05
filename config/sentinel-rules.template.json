@@ -1,0 +1,360 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspace": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('workspace'), '/Microsoft.SecurityInsights/', guid(resourceGroup().id, parameters('workspace'), 'DVL-006'))]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-12-01-preview",
+      "properties": {
+        "displayName": "DVL-006 | New account added to Administrators within 10 minutes",
+        "description": "",
+        "severity": "High",
+        "enabled": true,
+        "query": "// DVL PARAMETERS BEGIN\nlet StartTime = ago(30m);\nlet EndTime = now();\nlet HostFilter = \"vm-dvl-win\";\n// DVL PARAMETERS END\nlet AccountData = () {\n    SecurityEvent\n    | where TimeGenerated between (StartTime .. EndTime)\n    | where Computer =~ HostFilter\n    | where EventID in (4720, 4726, 4732, 4733)\n    | extend IngestedAt = ingestion_time(),\n        AccountOrGroupSid = coalesce(TargetSid, TargetUserSid),\n        Actor = SubjectAccount,\n        SourceFamily = \"SecurityEvent\"\n    | extend EventKey = hash_sha256(strcat(Computer, \"|\", EventID, \"|\", TimeGenerated, \"|\", AccountOrGroupSid, \"|\", MemberSid, \"|\", Actor)),\n        Evidence = strcat(TargetUserName, \" \", TargetAccount, \" \", AccountOrGroupSid, \" \", MemberSid, \" \", MemberName)\n    | project TimeGenerated, IngestedAt, Computer, EventID, EventKey, Evidence, SourceFamily,\n        Actor, AccountOrGroupSid, MemberSid, MemberName, TargetUserName, TargetAccount\n};\nlet Created = AccountData()\n    | where EventID == 4720\n    | where isnotempty(AccountOrGroupSid)\n    | project Computer,\n        AccountSid = AccountOrGroupSid,\n        CreatedAt = TimeGenerated,\n        CreatedIngestedAt = IngestedAt,\n        CreatedKey = EventKey,\n        CreatedUser = TargetUserName,\n        CreatedBy = Actor;\nlet Added = AccountData()\n    | where EventID == 4732\n    | where AccountOrGroupSid == \"S-1-5-32-544\"\n    | where isnotempty(MemberSid)\n    | project Computer,\n        AccountSid = MemberSid,\n        AddedAt = TimeGenerated,\n        AddedIngestedAt = IngestedAt,\n        AddedKey = EventKey,\n        AddedBy = Actor,\n        GroupSid = AccountOrGroupSid;\nCreated\n| join kind=inner Added on Computer, AccountSid\n| where AddedAt >= CreatedAt\n| where AddedAt <= CreatedAt + 10m\n| extend TimeGenerated = AddedAt,\n    IngestedAt = max_of(CreatedIngestedAt, AddedIngestedAt),\n    RuleId = \"DVL-006\",\n    EventKey = hash_sha256(strcat(CreatedKey, \"|\", AddedKey)),\n    Evidence = strcat(CreatedUser, \" \", AccountSid),\n    Actor = AddedBy,\n    TimeToAdmin = AddedAt - CreatedAt\n| project TimeGenerated, IngestedAt, Computer, RuleId,\n    CreatedUser, AccountSid, GroupSid,\n    CreatedAt, AddedAt, TimeToAdmin,\n    CreatedBy, AddedBy, Actor,\n    CreatedIngestedAt, AddedIngestedAt,\n    CreatedKey, AddedKey, EventKey, Evidence",
+        "queryFrequency": "PT5M",
+        "queryPeriod": "PT30M",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT5H",
+        "suppressionEnabled": false,
+        "startTimeUtc": null,
+        "tactics": [
+          "Persistence",
+          "PrivilegeEscalation"
+        ],
+        "techniques": [
+          "T1136",
+          "T1098"
+        ],
+        "subTechniques": [
+          "T1136.001",
+          "T1098.007"
+        ],
+        "alertRuleTemplateName": null,
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "reopenClosedIncident": false,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+          }
+        },
+        "eventGroupingSettings": {
+          "aggregationKind": "AlertPerResult"
+        },
+        "alertDetailsOverride": null,
+        "customDetails": {
+          "EventKey": "EventKey",
+          "RuleID": "RuleId",
+          "AccountSID": "AccountSid",
+          "CreatedKey": "CreatedKey",
+          "AddedKey": "AddedKey",
+          "CreatedAt": "CreatedAt",
+          "AddedAt": "AddedAt",
+          "CreatedBy": "CreatedBy",
+          "Actor": "Actor",
+          "Evidence": "Evidence"
+        },
+        "entityMappings": null,
+        "sentinelEntitiesMappings": null,
+        "templateVersion": null
+      }
+    },
+    {
+      "name": "[concat(parameters('workspace'), '/Microsoft.SecurityInsights/', guid(resourceGroup().id, parameters('workspace'), 'DVL-005'))]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-12-01-preview",
+      "properties": {
+        "displayName": "DVL-005 | Certutil Base64 decoding",
+        "description": "",
+        "severity": "Medium",
+        "enabled": true,
+        "query": "// DVL PARAMETERS BEGIN\nlet StartTime = ago(30m);\nlet EndTime = now();\nlet HostFilter = \"vm-dvl-win\";\n// DVL PARAMETERS END\nlet SysmonData = () {\n    Event\n    | where TimeGenerated between (StartTime .. EndTime)\n    | where Computer =~ HostFilter\n    | where EventLog == \"Microsoft-Windows-Sysmon/Operational\"\n    | extend IngestedAt = ingestion_time(), Xml = parse_xml(EventData)\n    | extend Items = coalesce(Xml.DataItem.EventData.Data, Xml.EventData.Data, Xml.Event.EventData.Data)\n    | extend Items = iff(isnull(Items), parse_xml(strcat(\"<EventData>\", EventData, \"</EventData>\")).EventData.Data, Items)\n    | extend Items = iff(gettype(Items) == \"dictionary\", pack_array(Items), Items)\n    | mv-apply Item = Items on (\n        extend FieldName = tostring(Item[\"@Name\"]), FieldValue = tostring(Item[\"#text\"])\n        | where isnotempty(FieldName)\n        | summarize Fields = make_bag(bag_pack(FieldName, FieldValue))\n    )\n    | extend Image = tostring(Fields.Image), CommandLine = tostring(Fields.CommandLine),\n        ParentImage = tostring(Fields.ParentImage), ProcessGuid = tostring(Fields.ProcessGuid),\n        ProcessId = tostring(Fields.ProcessId), Actor = tostring(Fields.User),\n        TargetObject = tostring(Fields.TargetObject), Details = tostring(Fields.Details),\n        TargetFilename = tostring(Fields.TargetFilename)\n    | extend EventKey = hash_sha256(strcat(Computer, \"|\", EventID, \"|\", TimeGenerated, \"|\", EventData)),\n        Evidence = strcat(CommandLine, \" \", TargetObject, \" \", Details, \" \", TargetFilename, \" \", Actor),\n        SourceFamily = \"Sysmon\"\n    | project TimeGenerated, IngestedAt, Computer, EventID, EventKey, Evidence, SourceFamily,\n        Image, CommandLine, ParentImage, ProcessGuid, ProcessId, Actor, TargetObject, Details, TargetFilename\n};\nSysmonData()\n| where EventID == 1\n| where Image endswith \"\\\\certutil.exe\"\n| where CommandLine matches regex @\"(?i)(^|\\s)-decode(\\s|$)\"\n| extend RuleId = \"DVL-005\"\n| project TimeGenerated, IngestedAt, Computer, EventID, RuleId,\n    Image, CommandLine, ParentImage, ProcessGuid, Actor, EventKey, Evidence",
+        "queryFrequency": "PT5M",
+        "queryPeriod": "PT30M",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT5H",
+        "suppressionEnabled": false,
+        "startTimeUtc": null,
+        "tactics": [
+          "DefenseEvasion"
+        ],
+        "techniques": [],
+        "subTechniques": [],
+        "alertRuleTemplateName": null,
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "reopenClosedIncident": false,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+          }
+        },
+        "eventGroupingSettings": {
+          "aggregationKind": "AlertPerResult"
+        },
+        "alertDetailsOverride": {
+          "alertDynamicProperties": []
+        },
+        "customDetails": {
+          "EventID": "EventID",
+          "RuleID": "RuleId",
+          "Actor": "Actor",
+          "ProcessGuid": "ProcessGuid",
+          "Evidence": "Evidence",
+          "EventKey": "EventKey"
+        },
+        "entityMappings": null,
+        "sentinelEntitiesMappings": null,
+        "templateVersion": null
+      }
+    },
+    {
+      "name": "[concat(parameters('workspace'), '/Microsoft.SecurityInsights/', guid(resourceGroup().id, parameters('workspace'), 'DVL-004'))]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-12-01-preview",
+      "properties": {
+        "displayName": "DVL-004 | Registry Run-key value set",
+        "description": "",
+        "severity": "Medium",
+        "enabled": true,
+        "query": "// DVL PARAMETERS BEGIN\nlet StartTime = ago(30m);\nlet EndTime = now();\nlet HostFilter = \"vm-dvl-win\";\n// DVL PARAMETERS END\nlet SysmonData = () {\n    Event\n    | where TimeGenerated between (StartTime .. EndTime)\n    | where Computer =~ HostFilter\n    | where EventLog == \"Microsoft-Windows-Sysmon/Operational\"\n    | extend IngestedAt = ingestion_time(), Xml = parse_xml(EventData)\n    | extend Items = coalesce(Xml.DataItem.EventData.Data, Xml.EventData.Data, Xml.Event.EventData.Data)\n    | extend Items = iff(isnull(Items), parse_xml(strcat(\"<EventData>\", EventData, \"</EventData>\")).EventData.Data, Items)\n    | extend Items = iff(gettype(Items) == \"dictionary\", pack_array(Items), Items)\n    | mv-apply Item = Items on (\n        extend FieldName = tostring(Item[\"@Name\"]), FieldValue = tostring(Item[\"#text\"])\n        | where isnotempty(FieldName)\n        | summarize Fields = make_bag(bag_pack(FieldName, FieldValue))\n    )\n    | extend Image = tostring(Fields.Image), CommandLine = tostring(Fields.CommandLine),\n        ParentImage = tostring(Fields.ParentImage), ProcessGuid = tostring(Fields.ProcessGuid),\n        ProcessId = tostring(Fields.ProcessId), Actor = tostring(Fields.User),\n        TargetObject = tostring(Fields.TargetObject), Details = tostring(Fields.Details),\n        TargetFilename = tostring(Fields.TargetFilename)\n    | extend EventKey = hash_sha256(strcat(Computer, \"|\", EventID, \"|\", TimeGenerated, \"|\", EventData)),\n        Evidence = strcat(CommandLine, \" \", TargetObject, \" \", Details, \" \", TargetFilename, \" \", Actor),\n        SourceFamily = \"Sysmon\"\n    | project TimeGenerated, IngestedAt, Computer, EventID, EventKey, Evidence, SourceFamily,\n        Image, CommandLine, ParentImage, ProcessGuid, ProcessId, Actor, TargetObject, Details, TargetFilename\n};\nSysmonData()\n| where EventID == 13\n| where TargetObject contains \"\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run\\\\\"\n| extend RuleId = \"DVL-004\"\n| project TimeGenerated, IngestedAt, Computer, EventID, RuleId,\n    Image, TargetObject, Details, ProcessGuid, Actor, EventKey, Evidence",
+        "queryFrequency": "PT5M",
+        "queryPeriod": "PT30M",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT5H",
+        "suppressionEnabled": false,
+        "startTimeUtc": null,
+        "tactics": [
+          "Persistence"
+        ],
+        "techniques": [
+          "T1547"
+        ],
+        "subTechniques": [
+          "T1547.001"
+        ],
+        "alertRuleTemplateName": null,
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "reopenClosedIncident": false,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+          }
+        },
+        "eventGroupingSettings": {
+          "aggregationKind": "AlertPerResult"
+        },
+        "alertDetailsOverride": null,
+        "customDetails": {
+          "EventKey": "EventKey",
+          "RuleID": "RuleId",
+          "Actor": "Actor",
+          "ProcessGUID": "ProcessGuid",
+          "TargetObject": "TargetObject",
+          "Details": "Details",
+          "Evidence": "Evidence"
+        },
+        "entityMappings": null,
+        "sentinelEntitiesMappings": null,
+        "templateVersion": null
+      }
+    },
+    {
+      "name": "[concat(parameters('workspace'), '/Microsoft.SecurityInsights/', guid(resourceGroup().id, parameters('workspace'), 'DVL-003'))]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-12-01-preview",
+      "properties": {
+        "displayName": "DVL-003 | Account added to local Administrators",
+        "description": "",
+        "severity": "High",
+        "enabled": true,
+        "query": "// DVL PARAMETERS BEGIN\nlet StartTime = ago(30m);\nlet EndTime = now();\nlet HostFilter = \"vm-dvl-win\";\n// DVL PARAMETERS END\nlet AccountData = () {\n    SecurityEvent\n    | where TimeGenerated between (StartTime .. EndTime)\n    | where Computer =~ HostFilter\n    | where EventID in (4720, 4726, 4732, 4733)\n    | extend IngestedAt = ingestion_time(),\n        AccountOrGroupSid = coalesce(TargetSid, TargetUserSid),\n        Actor = SubjectAccount,\n        SourceFamily = \"SecurityEvent\"\n    | extend EventKey = hash_sha256(strcat(Computer, \"|\", EventID, \"|\", TimeGenerated, \"|\", AccountOrGroupSid, \"|\", MemberSid, \"|\", Actor)),\n        Evidence = strcat(TargetUserName, \" \", TargetAccount, \" \", AccountOrGroupSid, \" \", MemberSid, \" \", MemberName)\n    | project TimeGenerated, IngestedAt, Computer, EventID, EventKey, Evidence, SourceFamily,\n        Actor, AccountOrGroupSid, MemberSid, MemberName, TargetUserName, TargetAccount\n};\nAccountData()\n| where EventID == 4732\n| where AccountOrGroupSid == \"S-1-5-32-544\"\n| extend RuleId = \"DVL-003\",\n    AccountSid = MemberSid\n| project TimeGenerated, IngestedAt, Computer, EventID, RuleId,\n    GroupName = TargetUserName,\n    GroupSid = AccountOrGroupSid,\n    AccountSid, Actor, MemberName, EventKey, Evidence",
+        "queryFrequency": "PT5M",
+        "queryPeriod": "PT30M",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT5H",
+        "suppressionEnabled": false,
+        "startTimeUtc": null,
+        "tactics": [
+          "PrivilegeEscalation",
+          "Persistence"
+        ],
+        "techniques": [
+          "T1098"
+        ],
+        "subTechniques": [
+          "T1098.007"
+        ],
+        "alertRuleTemplateName": null,
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "reopenClosedIncident": false,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+          }
+        },
+        "eventGroupingSettings": {
+          "aggregationKind": "AlertPerResult"
+        },
+        "alertDetailsOverride": null,
+        "customDetails": {
+          "EventKey": "EventKey",
+          "RuleID": "RuleId",
+          "Actor": "Actor",
+          "AccountSID": "AccountSid",
+          "GroupSID": "GroupSid",
+          "Evidence": "Evidence"
+        },
+        "entityMappings": null,
+        "sentinelEntitiesMappings": null,
+        "templateVersion": null
+      }
+    },
+    {
+      "name": "[concat(parameters('workspace'), '/Microsoft.SecurityInsights/', guid(resourceGroup().id, parameters('workspace'), 'DVL-002'))]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-12-01-preview",
+      "properties": {
+        "displayName": "DVL-002 | Scheduled task creation command",
+        "description": "",
+        "severity": "Medium",
+        "enabled": true,
+        "query": "// DVL PARAMETERS BEGIN\nlet StartTime = ago(30m);\nlet EndTime = now();\nlet HostFilter = \"vm-dvl-win\";\n// DVL PARAMETERS END\nlet SysmonData = () {\n    Event\n    | where TimeGenerated between (StartTime .. EndTime)\n    | where Computer =~ HostFilter\n    | where EventLog == \"Microsoft-Windows-Sysmon/Operational\"\n    | extend IngestedAt = ingestion_time(), Xml = parse_xml(EventData)\n    | extend Items = coalesce(Xml.DataItem.EventData.Data, Xml.EventData.Data, Xml.Event.EventData.Data)\n    | extend Items = iff(isnull(Items), parse_xml(strcat(\"<EventData>\", EventData, \"</EventData>\")).EventData.Data, Items)\n    | extend Items = iff(gettype(Items) == \"dictionary\", pack_array(Items), Items)\n    | mv-apply Item = Items on (\n        extend FieldName = tostring(Item[\"@Name\"]), FieldValue = tostring(Item[\"#text\"])\n        | where isnotempty(FieldName)\n        | summarize Fields = make_bag(bag_pack(FieldName, FieldValue))\n    )\n    | extend Image = tostring(Fields.Image), CommandLine = tostring(Fields.CommandLine),\n        ParentImage = tostring(Fields.ParentImage), ProcessGuid = tostring(Fields.ProcessGuid),\n        ProcessId = tostring(Fields.ProcessId), Actor = tostring(Fields.User),\n        TargetObject = tostring(Fields.TargetObject), Details = tostring(Fields.Details),\n        TargetFilename = tostring(Fields.TargetFilename)\n    | extend EventKey = hash_sha256(strcat(Computer, \"|\", EventID, \"|\", TimeGenerated, \"|\", EventData)),\n        Evidence = strcat(CommandLine, \" \", TargetObject, \" \", Details, \" \", TargetFilename, \" \", Actor),\n        SourceFamily = \"Sysmon\"\n    | project TimeGenerated, IngestedAt, Computer, EventID, EventKey, Evidence, SourceFamily,\n        Image, CommandLine, ParentImage, ProcessGuid, ProcessId, Actor, TargetObject, Details, TargetFilename\n};\nSysmonData()\n| where EventID == 1 and Image endswith \"\\\\schtasks.exe\"\n| where CommandLine matches regex @\"(?i)(^|\\s)/create(\\s|$)\"\n| extend RuleId = \"DVL-002\"\n| project TimeGenerated, IngestedAt, Computer, RuleId, EventKey, Evidence, Image, CommandLine, ParentImage, ProcessGuid, Actor",
+        "queryFrequency": "PT5M",
+        "queryPeriod": "PT30M",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT5H",
+        "suppressionEnabled": false,
+        "startTimeUtc": null,
+        "tactics": [
+          "Persistence"
+        ],
+        "techniques": [
+          "T1053"
+        ],
+        "subTechniques": [
+          "T1053.005"
+        ],
+        "alertRuleTemplateName": null,
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "reopenClosedIncident": false,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+          }
+        },
+        "eventGroupingSettings": {
+          "aggregationKind": "AlertPerResult"
+        },
+        "alertDetailsOverride": {
+          "alertDynamicProperties": []
+        },
+        "customDetails": {
+          "EventKey": "EventKey",
+          "RuleID": "RuleId",
+          "Actor": "Actor",
+          "ProcessGuid": "ProcessGuid",
+          "Evidence": "Evidence"
+        },
+        "entityMappings": null,
+        "sentinelEntitiesMappings": null,
+        "templateVersion": null
+      }
+    },
+    {
+      "name": "[concat(parameters('workspace'), '/Microsoft.SecurityInsights/', guid(resourceGroup().id, parameters('workspace'), 'DVL-001'))]",
+      "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+      "kind": "Scheduled",
+      "apiVersion": "2023-12-01-preview",
+      "properties": {
+        "displayName": "DVL-001 | Encoded PowerShell command",
+        "description": "",
+        "severity": "Medium",
+        "enabled": true,
+        "query": "// DVL PARAMETERS BEGIN\nlet StartTime = ago(30m);\nlet EndTime = now();\nlet HostFilter = \"vm-dvl-win\";\n// DVL PARAMETERS END\nlet SysmonData = () {\n    Event\n    | where TimeGenerated between (StartTime .. EndTime)\n    | where Computer =~ HostFilter\n    | where EventLog == \"Microsoft-Windows-Sysmon/Operational\"\n    | extend IngestedAt = ingestion_time(), Xml = parse_xml(EventData)\n    | extend Items = coalesce(Xml.DataItem.EventData.Data, Xml.EventData.Data, Xml.Event.EventData.Data)\n    | extend Items = iff(isnull(Items), parse_xml(strcat(\"<EventData>\", EventData, \"</EventData>\")).EventData.Data, Items)\n    | extend Items = iff(gettype(Items) == \"dictionary\", pack_array(Items), Items)\n    | mv-apply Item = Items on (\n        extend FieldName = tostring(Item[\"@Name\"]), FieldValue = tostring(Item[\"#text\"])\n        | where isnotempty(FieldName)\n        | summarize Fields = make_bag(bag_pack(FieldName, FieldValue))\n    )\n    | extend Image = tostring(Fields.Image), CommandLine = tostring(Fields.CommandLine),\n        ParentImage = tostring(Fields.ParentImage), ProcessGuid = tostring(Fields.ProcessGuid),\n        ProcessId = tostring(Fields.ProcessId), Actor = tostring(Fields.User),\n        TargetObject = tostring(Fields.TargetObject), Details = tostring(Fields.Details),\n        TargetFilename = tostring(Fields.TargetFilename)\n    | extend EventKey = hash_sha256(strcat(Computer, \"|\", EventID, \"|\", TimeGenerated, \"|\", EventData)),\n        Evidence = strcat(CommandLine, \" \", TargetObject, \" \", Details, \" \", TargetFilename, \" \", Actor),\n        SourceFamily = \"Sysmon\"\n    | project TimeGenerated, IngestedAt, Computer, EventID, EventKey, Evidence, SourceFamily,\n        Image, CommandLine, ParentImage, ProcessGuid, ProcessId, Actor, TargetObject, Details, TargetFilename\n};\nlet AccountData = () {\n    SecurityEvent\n    | where TimeGenerated between (StartTime .. EndTime)\n    | where Computer =~ HostFilter\n    | where EventID in (4720, 4726, 4732, 4733)\n    | extend IngestedAt = ingestion_time(),\n        AccountOrGroupSid = coalesce(TargetSid, TargetUserSid),\n        Actor = SubjectAccount, SourceFamily = \"SecurityEvent\"\n    | extend EventKey = hash_sha256(strcat(Computer, \"|\", EventID, \"|\", TimeGenerated, \"|\", AccountOrGroupSid, \"|\", MemberSid, \"|\", Actor)),\n        Evidence = strcat(TargetUserName, \" \", TargetAccount, \" \", AccountOrGroupSid, \" \", MemberSid, \" \", MemberName)\n    | project TimeGenerated, IngestedAt, Computer, EventID, EventKey, Evidence, SourceFamily,\n        Actor, AccountOrGroupSid, MemberSid, MemberName, TargetUserName, TargetAccount\n};\nSysmonData()\n| where EventID == 1\n| where Image endswith \"\\\\powershell.exe\" or Image endswith \"\\\\pwsh.exe\"\n| where CommandLine matches regex @\"(?i)(^|\\s)-(enc|encodedcommand)\\s+\"\n| extend RuleId = \"DVL-001\"\n| project TimeGenerated, IngestedAt, Computer, RuleId, EventKey, Evidence, Image, CommandLine, ParentImage, ProcessGuid, Actor",
+        "queryFrequency": "PT5M",
+        "queryPeriod": "PT30M",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT5H",
+        "suppressionEnabled": false,
+        "startTimeUtc": null,
+        "tactics": [
+          "Execution"
+        ],
+        "techniques": [
+          "T1059"
+        ],
+        "subTechniques": [
+          "T1059.001"
+        ],
+        "alertRuleTemplateName": null,
+        "incidentConfiguration": {
+          "createIncident": true,
+          "groupingConfiguration": {
+            "enabled": false,
+            "reopenClosedIncident": false,
+            "lookbackDuration": "PT5H",
+            "matchingMethod": "AllEntities",
+            "groupByEntities": [],
+            "groupByAlertDetails": [],
+            "groupByCustomDetails": []
+          }
+        },
+        "eventGroupingSettings": {
+          "aggregationKind": "AlertPerResult"
+        },
+        "alertDetailsOverride": null,
+        "customDetails": {
+          "EventKey": "EventKey",
+          "RuleID": "RuleId",
+          "Actor": "Actor",
+          "ProcessGuid": "ProcessGuid",
+          "Evidence": "Evidence"
+        },
+        "entityMappings": null,
+        "sentinelEntitiesMappings": null,
+        "templateVersion": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+// DVL PARAMETERS BEGIN
+let StartTime = ago(30m);
+let EndTime = now();
+let HostFilter = "vm-dvl-win";
+// DVL PARAMETERS END
+let SysmonData = () {
+    Event
+    | where TimeGenerated between (StartTime .. EndTime)
+    | where Computer =~ HostFilter
+    | where EventLog == "Microsoft-Windows-Sysmon/Operational"
+    | extend IngestedAt = ingestion_time(), Xml = parse_xml(EventData)
+    | extend Items = coalesce(Xml.DataItem.EventData.Data, Xml.EventData.Data, Xml.Event.EventData.Data)
+    | extend Items = iff(isnull(Items), parse_xml(strcat("<EventData>", EventData, "</EventData>")).EventData.Data, Items)
+    | extend Items = iff(gettype(Items) == "dictionary", pack_array(Items), Items)
+    | mv-apply Item = Items on (
+        extend FieldName = tostring(Item["@Name"]), FieldValue = tostring(Item["#text"])
+        | where isnotempty(FieldName)
+        | summarize Fields = make_bag(bag_pack(FieldName, FieldValue))
+    )
+    | extend Image = tostring(Fields.Image), CommandLine = tostring(Fields.CommandLine),
+        ParentImage = tostring(Fields.ParentImage), ProcessGuid = tostring(Fields.ProcessGuid),
+        ProcessId = tostring(Fields.ProcessId), Actor = tostring(Fields.User),
+        TargetObject = tostring(Fields.TargetObject), Details = tostring(Fields.Details),
+        TargetFilename = tostring(Fields.TargetFilename)
+    | extend EventKey = hash_sha256(strcat(Computer, "|", EventID, "|", TimeGenerated, "|", EventData)),
+        Evidence = strcat(CommandLine, " ", TargetObject, " ", Details, " ", TargetFilename, " ", Actor),
+        SourceFamily = "Sysmon"
+    | project TimeGenerated, IngestedAt, Computer, EventID, EventKey, Evidence, SourceFamily,
+        Image, CommandLine, ParentImage, ProcessGuid, ProcessId, Actor, TargetObject, Details, TargetFilename
+};
+SysmonData()
+| where EventID == 13
+| where TargetObject contains "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\"
+| extend RuleId = "DVL-004"
+| project TimeGenerated, IngestedAt, Computer, EventID, RuleId,
+    Image, TargetObject, Details, ProcessGuid, Actor, EventKey, Evidence

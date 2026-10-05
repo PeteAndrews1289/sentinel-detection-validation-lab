@@ -1,0 +1,10 @@
+// Historical lab ingestion delay, NOT a measure of real-world detection latency.
+union
+(Event | where EventLog == "Microsoft-Windows-Sysmon/Operational" | extend Feed="Sysmon"),
+(SecurityEvent | where EventID in (4720, 4726, 4732, 4733) | extend Feed="Security")
+| where TimeGenerated > ago(24h)
+| where Computer =~ "vm-dvl-win"
+| extend DelaySeconds = datetime_diff("second", ingestion_time(), TimeGenerated)
+| summarize Records=count(), P50Seconds=percentile(DelaySeconds, 50),
+    P95Seconds=percentile(DelaySeconds, 95), MaxSeconds=max(DelaySeconds),
+    NegativeDelays=countif(DelaySeconds < 0) by Feed

@@ -1,0 +1,17 @@
+<Sysmon schemaversion="4.82">
+  <HashAlgorithms>sha256</HashAlgorithms>
+  <EventFiltering>
+    <RuleGroup name="DVL process and lab file telemetry" groupRelation="or">
+      <ProcessCreate onmatch="exclude" />
+      <FileCreate onmatch="include">
+        <TargetFilename condition="begin with">C:\DVL\</TargetFilename>
+      </FileCreate>
+    </RuleGroup>
+    <RuleGroup name="DVL registry telemetry" groupRelation="or">
+      <RegistryEvent onmatch="include">
+        <TargetObject condition="contains">\Software\Microsoft\Windows\CurrentVersion\Run\</TargetObject>
+        <TargetObject condition="contains">\Software\DVL\</TargetObject>
+      </RegistryEvent>
+    </RuleGroup>
+  </EventFiltering>
+</Sysmon>

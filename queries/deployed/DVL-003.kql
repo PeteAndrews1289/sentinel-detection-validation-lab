@@ -1,0 +1,28 @@
+// DVL PARAMETERS BEGIN
+let StartTime = ago(30m);
+let EndTime = now();
+let HostFilter = "vm-dvl-win";
+// DVL PARAMETERS END
+let AccountData = () {
+    SecurityEvent
+    | where TimeGenerated between (StartTime .. EndTime)
+    | where Computer =~ HostFilter
+    | where EventID in (4720, 4726, 4732, 4733)
+    | extend IngestedAt = ingestion_time(),
+        AccountOrGroupSid = coalesce(TargetSid, TargetUserSid),
+        Actor = SubjectAccount,
+        SourceFamily = "SecurityEvent"
+    | extend EventKey = hash_sha256(strcat(Computer, "|", EventID, "|", TimeGenerated, "|", AccountOrGroupSid, "|", MemberSid, "|", Actor)),
+        Evidence = strcat(TargetUserName, " ", TargetAccount, " ", AccountOrGroupSid, " ", MemberSid, " ", MemberName)
+    | project TimeGenerated, IngestedAt, Computer, EventID, EventKey, Evidence, SourceFamily,
+        Actor, AccountOrGroupSid, MemberSid, MemberName, TargetUserName, TargetAccount
+};
+AccountData()
+| where EventID == 4732
+| where AccountOrGroupSid == "S-1-5-32-544"
+| extend RuleId = "DVL-003",
+    AccountSid = MemberSid
+| project TimeGenerated, IngestedAt, Computer, EventID, RuleId,
+    GroupName = TargetUserName,
+    GroupSid = AccountOrGroupSid,
+    AccountSid, Actor, MemberName, EventKey, Evidence

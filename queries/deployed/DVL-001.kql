@@ -1,0 +1,49 @@
+// DVL PARAMETERS BEGIN
+let StartTime = ago(30m);
+let EndTime = now();
+let HostFilter = "vm-dvl-win";
+// DVL PARAMETERS END
+let SysmonData = () {
+    Event
+    | where TimeGenerated between (StartTime .. EndTime)
+    | where Computer =~ HostFilter
+    | where EventLog == "Microsoft-Windows-Sysmon/Operational"
+    | extend IngestedAt = ingestion_time(), Xml = parse_xml(EventData)
+    | extend Items = coalesce(Xml.DataItem.EventData.Data, Xml.EventData.Data, Xml.Event.EventData.Data)
+    | extend Items = iff(isnull(Items), parse_xml(strcat("<EventData>", EventData, "</EventData>")).EventData.Data, Items)
+    | extend Items = iff(gettype(Items) == "dictionary", pack_array(Items), Items)
+    | mv-apply Item = Items on (
+        extend FieldName = tostring(Item["@Name"]), FieldValue = tostring(Item["#text"])
+        | where isnotempty(FieldName)
+        | summarize Fields = make_bag(bag_pack(FieldName, FieldValue))
+    )
+    | extend Image = tostring(Fields.Image), CommandLine = tostring(Fields.CommandLine),
+        ParentImage = tostring(Fields.ParentImage), ProcessGuid = tostring(Fields.ProcessGuid),
+        ProcessId = tostring(Fields.ProcessId), Actor = tostring(Fields.User),
+        TargetObject = tostring(Fields.TargetObject), Details = tostring(Fields.Details),
+        TargetFilename = tostring(Fields.TargetFilename)
+    | extend EventKey = hash_sha256(strcat(Computer, "|", EventID, "|", TimeGenerated, "|", EventData)),
+        Evidence = strcat(CommandLine, " ", TargetObject, " ", Details, " ", TargetFilename, " ", Actor),
+        SourceFamily = "Sysmon"
+    | project TimeGenerated, IngestedAt, Computer, EventID, EventKey, Evidence, SourceFamily,
+        Image, CommandLine, ParentImage, ProcessGuid, ProcessId, Actor, TargetObject, Details, TargetFilename
+};
+let AccountData = () {
+    SecurityEvent
+    | where TimeGenerated between (StartTime .. EndTime)
+    | where Computer =~ HostFilter
+    | where EventID in (4720, 4726, 4732, 4733)
+    | extend IngestedAt = ingestion_time(),
+        AccountOrGroupSid = coalesce(TargetSid, TargetUserSid),
+        Actor = SubjectAccount, SourceFamily = "SecurityEvent"
+    | extend EventKey = hash_sha256(strcat(Computer, "|", EventID, "|", TimeGenerated, "|", AccountOrGroupSid, "|", MemberSid, "|", Actor)),
+        Evidence = strcat(TargetUserName, " ", TargetAccount, " ", AccountOrGroupSid, " ", MemberSid, " ", MemberName)
+    | project TimeGenerated, IngestedAt, Computer, EventID, EventKey, Evidence, SourceFamily,
+        Actor, AccountOrGroupSid, MemberSid, MemberName, TargetUserName, TargetAccount
+};
+SysmonData()
+| where EventID == 1
+| where Image endswith "\\powershell.exe" or Image endswith "\\pwsh.exe"
+| where CommandLine matches regex @"(?i)(^|\s)-(enc|encodedcommand)\s+"
+| extend RuleId = "DVL-001"
+| project TimeGenerated, IngestedAt, Computer, RuleId, EventKey, Evidence, Image, CommandLine, ParentImage, ProcessGuid, Actor

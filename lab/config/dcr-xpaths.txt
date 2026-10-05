@@ -1,0 +1,7 @@
+# DCR 1: create via Microsoft Sentinel > Windows Security Events via AMA.
+# Destination table: SecurityEvent. Do NOT add these to the generic Event DCR.
+Security!*[System[(EventID=4720 or EventID=4726 or EventID=4732 or EventID=4733)]]
+
+# DCR 2: Azure Monitor > Data Collection Rules > Windows Event Logs > Custom.
+# Destination table: Event. Associate with the SAME VM and workspace as DCR 1.
+Microsoft-Windows-Sysmon/Operational!*[System[(EventID=1 or EventID=11 or EventID=13 or EventID=16)]]

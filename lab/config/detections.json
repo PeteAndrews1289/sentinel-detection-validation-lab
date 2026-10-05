@@ -1,0 +1,63 @@
+[
+  {
+    "id": "DVL-001",
+    "file": "01-encoded-powershell.kql",
+    "title": "Encoded PowerShell command",
+    "severity": "Medium",
+    "scope": "Process invocation with -enc or -EncodedCommand; not all aliases; not a verdict of maliciousness.",
+    "attack": [
+      "T1059.001"
+    ]
+  },
+  {
+    "id": "DVL-002",
+    "file": "02-schtasks-create.kql",
+    "title": "schtasks task-registration command",
+    "severity": "Medium",
+    "scope": "schtasks.exe /Create invocation; does not itself prove task creation succeeded; other registration APIs not covered.",
+    "attack": [
+      "T1053.005"
+    ]
+  },
+  {
+    "id": "DVL-003",
+    "file": "03-local-admin-membership.kql",
+    "title": "Local Administrators membership added",
+    "severity": "Medium",
+    "scope": "4732 for group SID S-1-5-32-544; legitimate administration can also match.",
+    "attack": [
+      "T1098.007"
+    ]
+  },
+  {
+    "id": "DVL-004",
+    "file": "04-run-key-modification.kql",
+    "title": "Run-key value set",
+    "severity": "Medium",
+    "scope": "Sysmon 13 for configured CurrentVersion Run path; no claim for every autostart location or future execution.",
+    "attack": [
+      "T1547.001"
+    ]
+  },
+  {
+    "id": "DVL-005",
+    "file": "05-certutil-decode.kql",
+    "title": "certutil Base64 file decoding",
+    "severity": "Low",
+    "scope": "certutil.exe -decode invocation; no claim that decoded content is malicious; -decodehex not covered.",
+    "attack": [
+      "T1140"
+    ]
+  },
+  {
+    "id": "DVL-006",
+    "file": "06-new-account-then-admin.kql",
+    "title": "New account added to local Administrators",
+    "severity": "High",
+    "scope": "4720 then 4732 for the same host and account SID within 10 minutes; authorization must still be investigated.",
+    "attack": [
+      "T1136.001",
+      "T1098.007"
+    ]
+  }
+]

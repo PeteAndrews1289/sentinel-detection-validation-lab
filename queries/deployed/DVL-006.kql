@@ -1,0 +1,57 @@
+// DVL PARAMETERS BEGIN
+let StartTime = ago(30m);
+let EndTime = now();
+let HostFilter = "vm-dvl-win";
+// DVL PARAMETERS END
+let AccountData = () {
+    SecurityEvent
+    | where TimeGenerated between (StartTime .. EndTime)
+    | where Computer =~ HostFilter
+    | where EventID in (4720, 4726, 4732, 4733)
+    | extend IngestedAt = ingestion_time(),
+        AccountOrGroupSid = coalesce(TargetSid, TargetUserSid),
+        Actor = SubjectAccount,
+        SourceFamily = "SecurityEvent"
+    | extend EventKey = hash_sha256(strcat(Computer, "|", EventID, "|", TimeGenerated, "|", AccountOrGroupSid, "|", MemberSid, "|", Actor)),
+        Evidence = strcat(TargetUserName, " ", TargetAccount, " ", AccountOrGroupSid, " ", MemberSid, " ", MemberName)
+    | project TimeGenerated, IngestedAt, Computer, EventID, EventKey, Evidence, SourceFamily,
+        Actor, AccountOrGroupSid, MemberSid, MemberName, TargetUserName, TargetAccount
+};
+let Created = AccountData()
+    | where EventID == 4720
+    | where isnotempty(AccountOrGroupSid)
+    | project Computer,
+        AccountSid = AccountOrGroupSid,
+        CreatedAt = TimeGenerated,
+        CreatedIngestedAt = IngestedAt,
+        CreatedKey = EventKey,
+        CreatedUser = TargetUserName,
+        CreatedBy = Actor;
+let Added = AccountData()
+    | where EventID == 4732
+    | where AccountOrGroupSid == "S-1-5-32-544"
+    | where isnotempty(MemberSid)
+    | project Computer,
+        AccountSid = MemberSid,
+        AddedAt = TimeGenerated,
+        AddedIngestedAt = IngestedAt,
+        AddedKey = EventKey,
+        AddedBy = Actor,
+        GroupSid = AccountOrGroupSid;
+Created
+| join kind=inner Added on Computer, AccountSid
+| where AddedAt >= CreatedAt
+| where AddedAt <= CreatedAt + 10m
+| extend TimeGenerated = AddedAt,
+    IngestedAt = max_of(CreatedIngestedAt, AddedIngestedAt),
+    RuleId = "DVL-006",
+    EventKey = hash_sha256(strcat(CreatedKey, "|", AddedKey)),
+    Evidence = strcat(CreatedUser, " ", AccountSid),
+    Actor = AddedBy,
+    TimeToAdmin = AddedAt - CreatedAt
+| project TimeGenerated, IngestedAt, Computer, RuleId,
+    CreatedUser, AccountSid, GroupSid,
+    CreatedAt, AddedAt, TimeToAdmin,
+    CreatedBy, AddedBy, Actor,
+    CreatedIngestedAt, AddedIngestedAt,
+    CreatedKey, AddedKey, EventKey, Evidence

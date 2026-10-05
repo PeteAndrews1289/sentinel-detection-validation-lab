@@ -1,0 +1,8 @@
+// Set a time range that includes both the activity AND subsequent alert delivery.
+SecurityAlert
+| where TimeGenerated > ago(4h)
+| where AlertName startswith "DVL-"
+| summarize arg_max(TimeGenerated, *) by SystemAlertId
+| project TimeGenerated, AlertName, SystemAlertId, CompromisedEntity,
+    StartTime, EndTime, ExtendedProperties, Entities
+| order by TimeGenerated desc

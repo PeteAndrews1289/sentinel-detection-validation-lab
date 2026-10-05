@@ -1,0 +1,132 @@
+[
+  {
+    "path": "lab/windows/Initialize-Lab.ps1",
+    "sha256": "3a37082326a0af77492e4149a5f0118f68e5831639d5993e1dae8a8bd29fe780",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/windows/Invoke-LabCase.ps1",
+    "sha256": "e373b460fdd49b3416973d41f6c2a509e0aeb91b8c89def40b88ee67231a96d3",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/config/sysmon-dvl.xml",
+    "sha256": "b3e5eed0ac5832f18c67bd00bb33123935ca7d71b11e19691f4ea2f47317865c",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/config/dcr-xpaths.txt",
+    "sha256": "339331b72191da2e0bb4257a9692f700b266ab983cf9533427a32abdc268535a",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/config/detections.json",
+    "sha256": "aad531495d267d44e0542e04e7aa8163b1c069ca86177e3e1aa5f6d73ec16101",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/queries/00-raw-evidence.kql",
+    "sha256": "e0714abd4f1db401980584b4dec09e0bbec6c515ed74c7060cba97f3bdd9a5e4",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/queries/01-encoded-powershell.kql",
+    "sha256": "3dde1b15a7a34c2d5db454b22c000d52ac3f1ee78630aeb7b3bee00657017921",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/queries/02-schtasks-create.kql",
+    "sha256": "66adb843b6889aaadc08bac016d78d3847cb5b801d180857390dabdd8daea0c9",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/queries/03-local-admin-membership.kql",
+    "sha256": "ceea067d2c44bb11478f3683bf306518a5fb5806dceb3934ba88ce014bc7e070",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/queries/04-run-key-modification.kql",
+    "sha256": "123c129264acab6c943b801e0e0604e48ec3eff1c2d2f7eadd8ffb7e786dbf6d",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/queries/05-certutil-decode.kql",
+    "sha256": "cc782c581ca455a36dc5af669024f92826c302d82a57c1d66faff04935ef4f7b",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/queries/06-new-account-then-admin.kql",
+    "sha256": "e5374f886b4a43188ed763ba5105f9af6ec11678bc7c7f45b72761df03bcd500",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/queries/07-parser-check.kql",
+    "sha256": "53b552508ad32766029f860f9b0257e1c9692a4e94e171aebcb599546eebd795",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/queries/08-pipeline-health.kql",
+    "sha256": "e9490763196240c025297422efd1fdecaa78a3d06a574ea5044241005e301ae0",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/queries/09-ingestion-latency.kql",
+    "sha256": "20820aa4c6c9487e15d35b2f11117ddaf424f396a63d85cc66a5360c9b89282b",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/queries/10-alert-review.kql",
+    "sha256": "126d6775c0e33524984d80084f4daad4dd5f11a444420a559b29385dc2d624d1",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/queries/_normalizers.txt",
+    "sha256": "18675cc1c04120e202669aeb70725e1e4d74b89af6c2aecaf28096fbc8da8c2c",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/tools/validate_run.py",
+    "sha256": "455691e2d78a5a0de33165cf9f3f971fec92b97032643d7949d3dae6378b5cb4",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/tests/test_validation_tool.py",
+    "sha256": "e88d87bc057de55f7faea53f7ce1bcd01af9990383572838170430713d878bff",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "lab/requirements.txt",
+    "sha256": "e246af25ede1ed60e088d6faa4c2c8e489b557010f3c79599999b038a133712c",
+    "origin": "VM kit snapshot; unchanged bytes"
+  },
+  {
+    "path": "queries/deployed/DVL-006.kql",
+    "sha256": "5c0036d19a01591f38d73585c71dcb66b585bcc44363a46be4b370bd05c77512",
+    "origin": "Exact query string from final deployed six-rule export"
+  },
+  {
+    "path": "queries/deployed/DVL-005.kql",
+    "sha256": "ce37f4124f1c6683cffbe6f07285d5defb4dca21e4b28222833177f97fa316f4",
+    "origin": "Exact query string from final deployed six-rule export"
+  },
+  {
+    "path": "queries/deployed/DVL-004.kql",
+    "sha256": "61589bbe1a2b043c8465814ec0e991f5d13447c22f40c888e88b20723d0b38dc",
+    "origin": "Exact query string from final deployed six-rule export"
+  },
+  {
+    "path": "queries/deployed/DVL-003.kql",
+    "sha256": "96a311de94a98d7e3dead51029fdbde2129fd5c699d1fe1846e4adc682af54b6",
+    "origin": "Exact query string from final deployed six-rule export"
+  },
+  {
+    "path": "queries/deployed/DVL-002.kql",
+    "sha256": "1938a0907e5de501d81955fe0ab5a28f689d788a60b71b7760cffdebfff04bb4",
+    "origin": "Exact query string from final deployed six-rule export"
+  },
+  {
+    "path": "queries/deployed/DVL-001.kql",
+    "sha256": "77a5de1e512fe1079604aeeebae6ef9f6cd3996b55205ffbf628faf59a00c2b4",
+    "origin": "Exact query string from final deployed six-rule export"
+  }
+]

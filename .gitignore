@@ -1,0 +1,27 @@
+# Never publish raw lab evidence or credentials.
+.DS_Store
+__MACOSX/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.rdp
+*.zip
+*.bak
+*.evtx
+runs/
+baseline/
+vm_snapshot/
+evidence_private/
+DVL_*_PRIVATE*/
+*.sha256.txt
+lab/reports/
+coverage/
+.pytest_cache/

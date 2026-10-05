@@ -1,0 +1,186 @@
+[
+  {
+    "path": "docs/images/rules-enabled.png",
+    "source_evidence_id": "E083",
+    "private_original_sha256": "aaefa80e09a68c6a8c05a9acba34d786f41243f6da9ab69b3bc146dd46ac61ce",
+    "public_sha256": "0579f54b54b3501e734b85e90c2988164489c9fde29b5bbca63e0492fbeec116",
+    "caption": "All six detectors enabled; diagnostic disabled",
+    "crop_at_width_1450": [
+      0,
+      275,
+      1450,
+      1070
+    ],
+    "redactions_at_width_1450": [
+      [
+        943,
+        537,
+        1290,
+        578,
+        "RULE RESOURCE ID REDACTED"
+      ]
+    ]
+  },
+  {
+    "path": "docs/images/dvl001-eventkey-alerts.png",
+    "source_evidence_id": "E018",
+    "private_original_sha256": "af9615bcd5af4d5f6ef3f3df3ef3a5cac0e80cbfba4aae160083ea6a4a4624a9",
+    "public_sha256": "e9cea4188120ef783d6e2d93bdb54c4a560a129d4b0ccdaf3c925f3eae8e9bb9",
+    "caption": "DVL-001: alert search using the full source EventKey",
+    "crop_at_width_1450": null,
+    "redactions_at_width_1450": []
+  },
+  {
+    "path": "docs/images/dvl002-exact-key-alerts.png",
+    "source_evidence_id": "E019",
+    "private_original_sha256": "df92f9dea44682ccb1782183bb86c9f74aa0aed6fb45c77cc0f730dbcaf7e7e1",
+    "public_sha256": "750e4f9e4f6e7593cbde24f5d4a038c282c22de10dca68132952efc65d7a3f7a",
+    "caption": "DVL-002: exact EventKey matches",
+    "crop_at_width_1450": null,
+    "redactions_at_width_1450": []
+  },
+  {
+    "path": "docs/images/dvl003-exact-key-alert.png",
+    "source_evidence_id": "E049",
+    "private_original_sha256": "e1a183f4ef6d37bd9da6a5a35149f839af266993c266c3031357ab9ed0c6b665",
+    "public_sha256": "68052b19d2386323a9190a76545508f3c6cf888f224225957a32e2f742f83198",
+    "caption": "DVL-003: scheduled alert; historical run attribution is limited",
+    "crop_at_width_1450": [
+      0,
+      210,
+      1450,
+      780
+    ],
+    "redactions_at_width_1450": []
+  },
+  {
+    "path": "docs/images/dvl004-exact-key-summary.png",
+    "source_evidence_id": "E052",
+    "private_original_sha256": "ccc14c536cb13fd4f537c33610a1da495158657a63c5bbc8c0edc819d6c8d39f",
+    "public_sha256": "0bcb0fb4153a59f89119f9979c96425562f63d6b39366134908e35efd996e501",
+    "caption": "DVL-004: two exact-key alerts for one registry write",
+    "crop_at_width_1450": null,
+    "redactions_at_width_1450": []
+  },
+  {
+    "path": "docs/images/dvl005-hash-only-control.png",
+    "source_evidence_id": "E059",
+    "private_original_sha256": "732b47b7df4729f8e0730daf77c2be4dc67f34934a120e471d15ed34f93f13ae",
+    "public_sha256": "23d0877e96342c3d6f1e00484da6ee609caff6c5483a4c8e14c2ed6e15c2af32",
+    "caption": "DVL-005: hash-only control is present and evaluates false",
+    "crop_at_width_1450": null,
+    "redactions_at_width_1450": []
+  },
+  {
+    "path": "docs/images/dvl005-before-mapping-fix.png",
+    "source_evidence_id": "E074",
+    "private_original_sha256": "9bca72d51519756d11208b129e0bc6525a14670dc550895525cc5d25e8861a65",
+    "public_sha256": "3bc430645e6f1de711009a293d2a53c1509ae6ccba1b750072bf724c9c920e70",
+    "caption": "DVL-005: before correction, EventID is present but EventKey is absent",
+    "crop_at_width_1450": null,
+    "redactions_at_width_1450": []
+  },
+  {
+    "path": "docs/images/dvl005-after-mapping-fix.png",
+    "source_evidence_id": "E077",
+    "private_original_sha256": "fd7099f21fe1c6676b11a3c69463eb37ee589d9ebda10e8f60d7a2fbeef0463b",
+    "public_sha256": "a91012696fcb516088d7d603f0be2c349414cb97597aecca21b24eff2362f98e",
+    "caption": "DVL-005: new test alerts include the correct EventKey",
+    "crop_at_width_1450": null,
+    "redactions_at_width_1450": []
+  },
+  {
+    "path": "docs/images/dvl006-correlated-source-pair.png",
+    "source_evidence_id": "E084",
+    "private_original_sha256": "e2395200df509e11a22f4ba6c7eb00326320c1d087a1f98133f11c1254079448",
+    "public_sha256": "d387a8892290b00bb7ada27438fcdc8ded1be8ecf1757e742ae7656353fd9315",
+    "caption": "DVL-006: source pair and combined key",
+    "crop_at_width_1450": [
+      0,
+      206,
+      1450,
+      889
+    ],
+    "redactions_at_width_1450": [
+      [
+        710,
+        302,
+        1002,
+        356,
+        "LAB SID REDACTED"
+      ],
+      [
+        242,
+        500,
+        540,
+        522,
+        "LAB SID REDACTED"
+      ],
+      [
+        333,
+        854,
+        657,
+        881,
+        "LAB SID REDACTED"
+      ]
+    ]
+  },
+  {
+    "path": "docs/images/dvl006-three-keys-match.png",
+    "source_evidence_id": "E086",
+    "private_original_sha256": "91263d9787ee65bdb5f8e2c8e7e810971162d384d32247b60c8fe11c7852faf4",
+    "public_sha256": "92c65c5b502f1921041e6acdfe4e5ae7316639f7b6b9abc60e86f89fcac74ee6",
+    "caption": "DVL-006: both source keys and the combined key match the alert",
+    "crop_at_width_1450": [
+      0,
+      204,
+      1450,
+      615
+    ],
+    "redactions_at_width_1450": [
+      [
+        1070,
+        270,
+        1380,
+        297,
+        "LAB SID REDACTED"
+      ],
+      [
+        220,
+        380,
+        540,
+        402,
+        "LAB SID REDACTED"
+      ]
+    ]
+  },
+  {
+    "path": "docs/images/dvl006-incident-link.png",
+    "source_evidence_id": "E087",
+    "private_original_sha256": "ecf797d09f03693562a3efd3da1456a21daef603c17f3db8a9c9830b7e2fae5b",
+    "public_sha256": "23f230cb20624c4868e1730c1b06797c6e279da496bc1634f9726e79f8a0d5ae",
+    "caption": "DVL-006: alert associated with incident; status remains New",
+    "crop_at_width_1450": [
+      0,
+      120,
+      1450,
+      748
+    ],
+    "redactions_at_width_1450": [
+      [
+        1240,
+        466,
+        1429,
+        497,
+        "URL REDACTED"
+      ],
+      [
+        204,
+        684,
+        1433,
+        713,
+        "AZURE RESOURCE URL REDACTED"
+      ]
+    ]
+  }
+]
